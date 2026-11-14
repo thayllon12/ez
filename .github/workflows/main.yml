@@ -3,14 +3,7 @@ name: Criar APK
 on:
   push:
     branches: [ main, master ]
-    paths-ignore:
-      - 'gradlew'
-      - 'gradlew.bat'
-      - 'gradle/wrapper/**'
   workflow_dispatch:
-
-permissions:
-  contents: write
 
 jobs:
   build:
@@ -27,21 +20,89 @@ jobs:
         with:
           gradle-version: 8.7
 
-      - name: Gerar gradlew
-        run: gradle wrapper --gradle-version 8.7
-
-      - name: Salvar gradlew no repositório
+      - name: Montar projeto
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@users.noreply.github.com"
-          git add gradlew gradlew.bat gradle/wrapper
-          git diff --cached --quiet || git commit -m "Adiciona gradle wrapper"
-          git push
+          P=proj
+          J=$P/app/src/main/java/com/comandante/player
+          R=$P/app/src/main/res
+          A=$P/app/src/main/assets
+          mkdir -p $J $R/values $R/drawable $R/mipmap-anydpi-v26 $A
+          cp Arquivos.java Busca.java MainActivity.java PlayerService.java Ponte.java $J/
+          cp AndroidManifest.xml $P/app/src/main/
+          cp themes.xml $R/values/
+          cp ic_launcher.xml $R/mipmap-anydpi-v26/
+          cp ic_launcher_frente.xml ic_notificacao.xml $R/drawable/
+          cp index.html logo.jpg fundo1.jpg fundo2.jpg $A/
+          cp proguard-rules.pro $P/app/
+
+          cat > $P/settings.gradle <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "Comandante"
+          include ':app'
+          EOF
+
+          cat > $P/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application' version '8.5.2' apply false
+          }
+          EOF
+
+          cat > $P/gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          android.useAndroidX=true
+          android.nonTransitiveRClass=true
+          EOF
+
+          cat > $P/app/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.comandante.player'
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.comandante.player"
+                  minSdk 26
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                      signingConfig signingConfigs.debug
+                  }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+          }
+          dependencies {
+              implementation 'androidx.core:core:1.13.1'
+              implementation 'androidx.media:media:1.7.0'
+              implementation 'androidx.webkit:webkit:1.11.0'
+          }
+          EOF
 
       - name: Build
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        working-directory: proj
+        run: gradle assembleDebug --no-daemon --stacktrace
 
       - uses: actions/upload-artifact@v4
         with:
           name: Comandante-APK
-          path: app/build/outputs/apk/debug/*.apk
+          path: proj/app/build/outputs/apk/debug/*.apk
