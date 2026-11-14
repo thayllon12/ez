@@ -1,0 +1,24 @@
+COMANDANTE - projeto Android completo
+
+1) As imagens (logo.jpg, fundo1.jpg, fundo2.jpg) já estão em app/src/main/assets/
+
+2) COMPILAR NO GITHUB
+   - Crie um repositório, envie TODO o conteúdo desta pasta (inclusive a pasta .github)
+   - Aba Actions > Criar APK > Run workflow (ou só dar push)
+   - Quando terminar, baixe o APK em "Artifacts" (Comandante-APK)
+   - O workflow usa Gradle 8.7 + JDK 17, não precisa de gradlew
+
+3) COMPILAR NO ANDROID STUDIO / OUTROS
+   - Requisitos: JDK 17, Gradle 8.7, Android Gradle Plugin 8.5.2, compileSdk 34, build-tools 34.0.0
+   - Comando: gradle assembleDebug  (APK em app/build/outputs/apk/debug)
+   - O arquivo gradle-wrapper.jar não vem no ZIP; se a ferramenta exigir gradlew, rode "gradle wrapper --gradle-version 8.7" uma vez
+   - O APK release já sai assinado com a chave debug, então instala direto
+
+4) COMO FUNCIONA
+   - Interface em HTML dentro de um WebView; o áudio toca no WebView (precisa para graves e visualizador)
+   - Serviço nativo em primeiro plano com MediaSession e notificação MediaStyle (capa, título, artista, anterior, play/pause, próxima, fechar, barra de progresso)
+   - Pesquisa: API pública do iTunes Search; só prévias de 30s e capas autorizadas
+   - "Adicionar músicas" abre o seletor de arquivos do Android e copia para a biblioteca
+   - Biblioteca fica salva no aparelho
+
+5) PERMISSÕES: INTERNET, POST_NOTIFICATIONS, FOREGROUND_SERVICE, FOREGROUND_SERVICE_MEDIA_PLAYBACK, WAKE_LOCK

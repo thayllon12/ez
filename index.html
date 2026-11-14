@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<title>Comandante</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Segoe UI', Roboto, sans-serif; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+:root { --laranja: #ff4500; --ambar: #ff8c00; --vidro: rgba(14,14,16,0.82); }
+
+#fundo { position: fixed; inset: 0; background-size: cover; background-position: center; background-color: #0b0b0d; z-index: 1; transition: opacity 1.2s ease-in-out; filter: brightness(0.55) saturate(1.2); }
+#fundo.fundo1 { background-image: url('fundo1.jpg'); }
+#fundo.fundo2 { background-image: url('fundo2.jpg'); }
+
+#tela-inicial { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; gap: 4vmin; padding: 4vmin; }
+h1 { color: #fff; font-size: clamp(30px, 8vmin, 80px); letter-spacing: 0.4vmin; text-transform: uppercase; text-shadow: 0 0 2vmin var(--laranja), 0 0 4vmin var(--laranja); text-align: center; font-weight: 900; }
+#botao-jogar { padding: 2.5vmin 8vmin; font-size: clamp(18px, 4vmin, 38px); font-weight: 900; color: #fff; background: linear-gradient(45deg, var(--laranja), var(--ambar)); border: 0.5vmin solid #fff; border-radius: 100px; cursor: pointer; text-transform: uppercase; box-shadow: 0 0 3vmin rgba(255,69,0,0.8); transition: transform .15s; }
+#botao-jogar:active { transform: scale(0.94); }
+
+#visualizador { position: fixed; inset: 0; display: none; justify-content: center; align-items: center; z-index: 3; pointer-events: none; }
+#canvas-barras { position: absolute; width: 100%; height: 100%; z-index: 1; }
+#logo-girando { width: 32vmin; height: 32vmin; border-radius: 50%; object-fit: cover; z-index: 2; background: #111; box-shadow: 0 0 6vmin rgba(255,69,0,0.9), 0 0 12vmin rgba(255,69,0,0.5); border: 0.5vmin solid rgba(255,255,255,0.85); }
+
+#topo { position: fixed; top: 1.5vmin; left: 50%; transform: translateX(-50%); display: none; align-items: center; gap: 1.2vmin; padding: 0.9vmin 1.6vmin; background: var(--vidro); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 0.25vmin solid rgba(255,69,0,0.8); border-radius: 100px; z-index: 6; box-shadow: 0 0 2.5vmin rgba(255,69,0,0.35); }
+.btn-topo { display: flex; align-items: center; gap: 0.8vmin; padding: 1vmin 2vmin; font-size: clamp(10px, 1.7vmin, 15px); font-weight: 700; color: #fff; background: rgba(255,255,255,0.07); border: 0.25vmin solid rgba(255,69,0,0.75); border-radius: 100px; cursor: pointer; text-transform: uppercase; transition: background .2s, transform .1s; }
+.btn-topo:active { background: var(--laranja); transform: scale(0.96); }
+.btn-topo svg { width: clamp(14px, 2.4vmin, 22px); height: clamp(14px, 2.4vmin, 22px); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+#controles { position: fixed; bottom: 1.5vmin; left: 50%; transform: translateX(-50%); display: none; flex-direction: column; align-items: center; gap: 0.8vmin; padding: 1.3vmin 2.5vmin; background: var(--vidro); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 0.25vmin solid rgba(255,69,0,0.8); border-radius: 2vmin; z-index: 5; box-shadow: 0 0 2.5vmin rgba(255,69,0,0.4); width: 96vw; max-width: 1100px; }
+#agora { width: 100%; text-align: center; color: #fff; font-size: clamp(11px, 1.9vmin, 16px); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#agora span { color: #ff8c00; font-weight: 600; }
+#barra-tempo { width: 100%; display: flex; align-items: center; gap: 1.5vmin; }
+#tempo-atual, #tempo-total { color: var(--ambar); font-size: clamp(10px, 1.6vmin, 14px); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; min-width: 8vmin; text-align: center; }
+input[type=range] { -webkit-appearance: none; appearance: none; height: 1.2vmin; background: #333; border-radius: 100px; outline: none; cursor: pointer; }
+#progresso { flex: 1; }
+#progresso::-webkit-slider-thumb { -webkit-appearance: none; width: 2.5vmin; height: 2.5vmin; background: #fff; border: 0.3vmin solid var(--laranja); border-radius: 50%; box-shadow: 0 0 1.5vmin var(--laranja); }
+#linha-botoes { display: flex; align-items: center; justify-content: center; gap: 1.5vmin; flex-wrap: wrap; width: 100%; }
+.botao-ctrl { padding: 1vmin 2.2vmin; font-size: clamp(10px, 1.7vmin, 15px); font-weight: 700; color: #fff; background: rgba(255,255,255,0.07); border: 0.25vmin solid var(--laranja); border-radius: 100px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.1vmin; transition: background .2s, transform .1s; }
+.botao-ctrl:active { transform: scale(0.95); background: var(--laranja); }
+#btn-play { background: linear-gradient(45deg, var(--laranja), var(--ambar)); border-color: #fff; min-width: 9vmin; }
+#grupo-grave { display: flex; align-items: center; gap: 1vmin; }
+#grupo-grave label { color: #fff; font-size: clamp(10px, 1.6vmin, 14px); font-weight: 700; text-transform: uppercase; }
+#valor-grave { color: var(--ambar); }
+#slider-grave { width: clamp(70px, 14vmin, 180px); }
+#slider-grave::-webkit-slider-thumb { -webkit-appearance: none; width: 2.5vmin; height: 2.5vmin; background: var(--laranja); border: 0.3vmin solid #fff; border-radius: 50%; box-shadow: 0 0 1.5vmin var(--laranja); }
+#dropdown-grave { padding: 0.8vmin 1.5vmin; font-size: clamp(10px, 1.6vmin, 14px); font-weight: 700; color: #fff; background: #1b1b1b; border: 0.25vmin solid var(--laranja); border-radius: 100px; outline: none; }
+#dropdown-grave option { background: #111; color: #fff; }
+
+#painel { position: fixed; top: 0; right: 0; bottom: 0; width: min(48vw, 520px); background: rgba(12,12,15,0.9); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-left: 0.25vmin solid rgba(255,69,0,0.7); z-index: 30; display: flex; flex-direction: column; transform: translateX(105%); transition: transform .28s cubic-bezier(.2,.8,.2,1); box-shadow: -2vmin 0 5vmin rgba(0,0,0,0.6); }
+#painel.aberto { transform: translateX(0); }
+#painel-topo { display: flex; align-items: center; gap: 1vmin; padding: 1.6vmin 2vmin; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.aba { padding: 0.9vmin 2vmin; font-size: clamp(11px, 1.8vmin, 15px); font-weight: 700; color: #aaa; background: transparent; border: 0.2vmin solid transparent; border-radius: 100px; text-transform: uppercase; cursor: pointer; }
+.aba.ativa { color: #fff; border-color: var(--laranja); background: rgba(255,69,0,0.18); }
+#fechar-painel { margin-left: auto; width: 4.4vmin; height: 4.4vmin; min-width: 30px; min-height: 30px; border-radius: 50%; border: 0.2vmin solid rgba(255,255,255,0.3); background: transparent; color: #fff; font-size: clamp(14px, 2.4vmin, 20px); cursor: pointer; }
+#campo-busca-box { padding: 1.4vmin 2vmin; }
+#campo-busca { width: 100%; padding: 1.3vmin 2vmin; font-size: clamp(12px, 2vmin, 16px); color: #fff; background: rgba(255,255,255,0.08); border: 0.2vmin solid rgba(255,255,255,0.18); border-radius: 100px; outline: none; user-select: text; -webkit-user-select: text; }
+#campo-busca:focus { border-color: var(--laranja); }
+.lista { flex: 1; overflow-y: auto; padding: 0.5vmin 2vmin 2vmin; -webkit-overflow-scrolling: touch; }
+.vazio { color: #999; text-align: center; padding: 6vmin 2vmin; font-size: clamp(11px, 1.8vmin, 15px); line-height: 1.5; }
+.item { display: flex; align-items: center; gap: 1.6vmin; padding: 1.1vmin; margin-bottom: 0.8vmin; border-radius: 1.6vmin; background: rgba(255,255,255,0.05); animation: entrar .25s ease both; }
+.item.tocando { background: rgba(255,69,0,0.18); }
+@keyframes entrar { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.item img, .item .sem-capa { width: 8vmin; height: 8vmin; min-width: 44px; min-height: 44px; max-width: 64px; max-height: 64px; border-radius: 1.2vmin; object-fit: cover; background: #222; }
+.item .info { flex: 1; min-width: 0; }
+.item .nome { color: #fff; font-size: clamp(12px, 1.9vmin, 15px); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item .artista { color: #aaa; font-size: clamp(10px, 1.6vmin, 13px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item .dur { color: var(--ambar); font-size: clamp(10px, 1.5vmin, 12px); font-variant-numeric: tabular-nums; }
+.acoes { display: flex; gap: 0.8vmin; }
+.mini { width: 5.2vmin; height: 5.2vmin; min-width: 36px; min-height: 36px; border-radius: 50%; border: 0.2vmin solid var(--laranja); background: rgba(255,255,255,0.06); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.mini:active { background: var(--laranja); }
+.mini:disabled { opacity: 0.35; }
+.mini svg { width: 55%; height: 55%; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.mini.ok { border-color: #38c172; color: #38c172; }
+.carregando { display: flex; justify-content: center; padding: 5vmin; }
+.giro { width: 5vmin; height: 5vmin; min-width: 28px; min-height: 28px; border: 0.5vmin solid rgba(255,255,255,0.15); border-top-color: var(--laranja); border-radius: 50%; animation: gira 0.8s linear infinite; }
+@keyframes gira { to { transform: rotate(360deg); } }
+
+#aviso { position: fixed; left: 50%; top: 9vmin; transform: translate(-50%, -20px); background: rgba(20,20,22,0.95); color: #fff; padding: 1.2vmin 3vmin; border-radius: 100px; border: 0.2vmin solid var(--laranja); font-size: clamp(11px, 1.8vmin, 15px); font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 50; }
+#aviso.mostra { opacity: 1; transform: translate(-50%, 0); }
+
+#alerta-paisagem { position: fixed; inset: 0; background: #000; color: #fff; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 999; text-align: center; padding: 10vmin; font-size: 5vmin; font-weight: 700; }
+@media (orientation: portrait) and (max-width: 900px) {
+  #alerta-paisagem { display: flex; }
+  #tela-inicial, #visualizador, #controles, #topo, #painel { display: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div id="fundo" class="fundo1"></div>
+
+<div id="tela-inicial">
+  <h1>Comandante</h1>
+  <button id="botao-jogar">Jogar</button>
+</div>
+
+<div id="visualizador">
+  <canvas id="canvas-barras"></canvas>
+  <img id="logo-girando" src="logo.jpg" alt="Logo">
+</div>
+
+<div id="topo">
+  <button class="btn-topo" id="btn-add">Adicionar Músicas</button>
+  <button class="btn-topo" id="btn-busca" aria-label="Pesquisar músicas">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.5" y2="16.5"></line></svg>
+  </button>
+  <button class="btn-topo" id="btn-biblioteca" aria-label="Biblioteca">
+    <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><circle cx="3.5" cy="6" r="1"></circle><circle cx="3.5" cy="12" r="1"></circle><circle cx="3.5" cy="18" r="1"></circle></svg>
+  </button>
+</div>
+
+<div id="controles">
+  <div id="agora">Nenhuma música</div>
+  <div id="barra-tempo">
+    <span id="tempo-atual">0:00</span>
+    <input type="range" id="progresso" min="0" max="100" value="0" step="0.1">
+    <span id="tempo-total">0:00</span>
+  </div>
+  <div id="linha-botoes">
+    <button class="botao-ctrl" id="btn-anterior">Anterior</button>
+    <button class="botao-ctrl" id="btn-play">Play</button>
+    <button class="botao-ctrl" id="btn-proxima">Próxima</button>
+    <div id="grupo-grave">
+      <label>Graves: <span id="valor-grave">100%</span></label>
+      <input type="range" id="slider-grave" min="0" max="1000" value="100">
+      <select id="dropdown-grave">
+        <option value="100">100%</option><option value="200">200%</option><option value="300">300%</option>
+        <option value="400">400%</option><option value="500">500%</option><option value="600">600%</option>
+        <option value="700">700%</option><option value="800">800%</option><option value="900">900%</option>
+        <option value="1000">1000%</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div id="painel">
+  <div id="painel-topo">
+    <button class="aba ativa" id="aba-busca">Pesquisar</button>
+    <button class="aba" id="aba-biblioteca">Biblioteca</button>
+    <button id="fechar-painel" aria-label="Fechar">✕</button>
+  </div>
+  <div id="vista-busca" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+    <div id="campo-busca-box"><input id="campo-busca" type="search" placeholder="Pesquisar músicas..." autocomplete="off"></div>
+    <div class="lista" id="lista-busca"></div>
+  </div>
+  <div id="vista-biblioteca" style="display:none;flex-direction:column;flex:1;min-height:0;">
+    <div class="lista" id="lista-biblioteca"></div>
+  </div>
+</div>
+
+<div id="aviso"></div>
+<div id="alerta-paisagem">Gire o celular para a horizontal (paisagem)</div>
+
+<script>
+const CHAVE = 'comandante_biblioteca_v1';
+const ICONE_PLAY = '<svg viewBox="0 0 24 24"><polygon points="7,4 19,12 7,20"></polygon></svg>';
+const ICONE_PAUSE = '<svg viewBox="0 0 24 24"><line x1="8" y1="5" x2="8" y2="19"></line><line x1="16" y1="5" x2="16" y2="19"></line></svg>';
+const ICONE_MAIS = '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>';
+const ICONE_OK = '<svg viewBox="0 0 24 24"><polyline points="5,13 10,18 19,7"></polyline></svg>';
+const ICONE_LIXO = '<svg viewBox="0 0 24 24"><polyline points="4,7 20,7"></polyline><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path></svg>';
+
+const $ = (id) => document.getElementById(id);
+const fundo = $('fundo'), telaInicial = $('tela-inicial'), visualizador = $('visualizador'), controles = $('controles'), topo = $('topo');
+const botaoJogar = $('botao-jogar'), btnAnterior = $('btn-anterior'), btnProxima = $('btn-proxima'), btnPlay = $('btn-play');
+const btnAdd = $('btn-add'), btnBusca = $('btn-busca'), btnBiblioteca = $('btn-biblioteca');
+const sliderGrave = $('slider-grave'), dropdownGrave = $('dropdown-grave'), valorGrave = $('valor-grave');
+const progresso = $('progresso'), tempoAtualEl = $('tempo-atual'), tempoTotalEl = $('tempo-total'), agoraEl = $('agora');
+const canvas = $('canvas-barras'), ctxCanvas = canvas.getContext('2d'), logo = $('logo-girando');
+const painel = $('painel'), abaBusca = $('aba-busca'), abaBiblioteca = $('aba-biblioteca');
+const vistaBusca = $('vista-busca'), vistaBiblioteca = $('vista-biblioteca');
+const campoBusca = $('campo-busca'), listaBusca = $('lista-busca'), listaBiblioteca = $('lista-biblioteca');
+const aviso = $('aviso');
+
+const nativo = typeof window.Android !== 'undefined' ? window.Android : null;
+
+let biblioteca = [];
+let indice = -1;
+let arrastandoProgresso = false;
+let motorIniciado = false;
+
+try {
+  const salvo = JSON.parse(localStorage.getItem(CHAVE) || '[]');
+  if (Array.isArray(salvo)) biblioteca = salvo.filter((f) => f && f.id && f.url);
+} catch (e) { biblioteca = []; }
+
+function salvarBiblioteca() {
+  try { localStorage.setItem(CHAVE, JSON.stringify(biblioteca)); } catch (e) {}
+}
+
+function el(tag, classe, texto) {
+  const e = document.createElement(tag);
+  if (classe) e.className = classe;
+  if (texto !== undefined) e.textContent = texto;
+  return e;
+}
+
+function formatarTempo(seg) {
+  if (isNaN(seg) || !isFinite(seg)) return '0:00';
+  const m = Math.floor(seg / 60);
+  const s = Math.floor(seg % 60).toString().padStart(2, '0');
+  return m + ':' + s;
+}
+
+let timerAviso = null;
+function mostrarAviso(texto) {
+  aviso.textContent = texto;
+  aviso.classList.add('mostra');
+  clearTimeout(timerAviso);
+  timerAviso = setTimeout(() => aviso.classList.remove('mostra'), 2400);
+}
+
+const audio = new Audio();
+audio.preload = 'auto';
+const previa = new Audio();
+previa.preload = 'none';
+let previaId = null;
+
+let audioContext, sourceNode, bassFilter, compressor, analyser;
+
+function iniciarAudioEngine() {
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  sourceNode = audioContext.createMediaElementSource(audio);
+  bassFilter = audioContext.createBiquadFilter();
+  bassFilter.type = 'lowshelf';
+  bassFilter.frequency.value = 200;
+  bassFilter.gain.value = 0;
+  compressor = audioContext.createDynamicsCompressor();
+  compressor.threshold.value = -6;
+  compressor.knee.value = 0;
+  compressor.ratio.value = 20;
+  compressor.attack.value = 0.003;
+  compressor.release.value = 0.15;
+  analyser = audioContext.createAnalyser();
+  analyser.fftSize = 256;
+  analyser.smoothingTimeConstant = 0.8;
+  sourceNode.connect(bassFilter);
+  bassFilter.connect(compressor);
+  compressor.connect(analyser);
+  analyser.connect(audioContext.destination);
+  audioContext.onstatechange = () => {
+    if (audioContext.state === 'suspended' && !audio.paused) audioContext.resume();
+  };
+  motorIniciado = true;
+}
+
+function aplicarGrave(valor) {
+  if (bassFilter) bassFilter.gain.value = (valor - 100) * 0.08;
+  valorGrave.textContent = valor + '%';
+  sliderGrave.value = valor;
+  dropdownGrave.value = valor;
+}
+
+function faixaAtual() {
+  return indice >= 0 && indice < biblioteca.length ? biblioteca[indice] : null;
+}
+
+function enviarMidia() {
+  const f = faixaAtual();
+  if (!nativo || !f) return;
+  const dur = isFinite(audio.duration) && audio.duration > 0 ? audio.duration * 1000 : (f.duracao || 0);
+  nativo.atualizarMidia(f.titulo || '', f.artista || '', f.capa || '', dur, (audio.currentTime || 0) * 1000, !audio.paused);
+}
+
+function atualizarRotulo() {
+  const f = faixaAtual();
+  agoraEl.textContent = '';
+  if (!f) { agoraEl.textContent = 'Nenhuma música'; return; }
+  agoraEl.append(document.createTextNode(f.titulo + ' '));
+  agoraEl.append(el('span', '', '— ' + f.artista));
+}
+
+function atualizarBotaoPlay() {
+  btnPlay.textContent = audio.paused ? 'Play' : 'Pause';
+}
+
+function tocar(i) {
+  if (!biblioteca.length) { abrirPainel('busca'); return; }
+  pararPrevia();
+  if (!motorIniciado) iniciarAudioEngine();
+  if (audioContext.state === 'suspended') audioContext.resume();
+  indice = ((i % biblioteca.length) + biblioteca.length) % biblioteca.length;
+  const f = biblioteca[indice];
+  audio.src = f.url;
+  progresso.value = 0;
+  tempoAtualEl.textContent = '0:00';
+  tempoTotalEl.textContent = formatarTempo((f.duracao || 0) / 1000);
+  atualizarRotulo();
+  desenharBiblioteca();
+  const p = audio.play();
+  if (p && p.catch) p.catch(() => { mostrarAviso('Não foi possível reproduzir esta faixa'); atualizarBotaoPlay(); });
+}
+
+function proximaMusica() {
+  if (!biblioteca.length) return;
+  tocar(indice + 1);
+}
+
+function musicaAnterior() {
+  if (!biblioteca.length) return;
+  if (audio.currentTime > 3) { audio.currentTime = 0; return; }
+  tocar(indice - 1);
+}
+
+function alternar() {
+  if (!biblioteca.length) { abrirPainel('busca'); return; }
+  if (indice < 0) { tocar(0); return; }
+  if (audio.paused) {
+    pararPrevia();
+    if (audioContext && audioContext.state === 'suspended') audioContext.resume();
+    const p = audio.play();
+    if (p && p.catch) p.catch(() => {});
+  } else {
+    audio.pause();
+  }
+}
+
+audio.addEventListener('ended', () => {
+  if (biblioteca.length === 1) { audio.currentTime = 0; audio.play(); } else { proximaMusica(); }
+});
+audio.addEventListener('error', () => {
+  if (!audio.src) return;
+  mostrarAviso('Erro ao carregar a faixa');
+  if (biblioteca.length > 1) setTimeout(proximaMusica, 800);
+});
+audio.addEventListener('play', () => { atualizarBotaoPlay(); enviarMidia(); desenharBiblioteca(); });
+audio.addEventListener('pause', () => { atualizarBotaoPlay(); enviarMidia(); desenharBiblioteca(); });
+audio.addEventListener('seeked', enviarMidia);
+audio.addEventListener('loadedmetadata', () => {
+  tempoTotalEl.textContent = formatarTempo(audio.duration);
+  enviarMidia();
+});
+audio.addEventListener('timeupdate', () => {
+  if (!arrastandoProgresso && audio.duration) {
+    progresso.value = (audio.currentTime / audio.duration) * 100;
+    tempoAtualEl.textContent = formatarTempo(audio.currentTime);
+  }
+});
+
+progresso.addEventListener('input', () => {
+  arrastandoProgresso = true;
+  if (audio.duration) tempoAtualEl.textContent = formatarTempo((progresso.value / 100) * audio.duration);
+});
+progresso.addEventListener('change', () => {
+  if (audio.duration) audio.currentTime = (progresso.value / 100) * audio.duration;
+  arrastandoProgresso = false;
+});
+
+btnPlay.addEventListener('click', alternar);
+btnAnterior.addEventListener('click', musicaAnterior);
+btnProxima.addEventListener('click', proximaMusica);
+sliderGrave.addEventListener('input', () => aplicarGrave(parseInt(sliderGrave.value, 10)));
+dropdownGrave.addEventListener('change', () => aplicarGrave(parseInt(dropdownGrave.value, 10)));
+
+let fundoAtual = 1;
+setInterval(() => {
+  fundoAtual = fundoAtual === 1 ? 2 : 1;
+  fundo.className = 'fundo' + fundoAtual;
+}, 10000);
+
+botaoJogar.addEventListener('click', () => {
+  if (!motorIniciado) iniciarAudioEngine();
+  if (audioContext.state === 'suspended') audioContext.resume();
+  telaInicial.style.display = 'none';
+  visualizador.style.display = 'flex';
+  controles.style.display = 'flex';
+  topo.style.display = 'flex';
+  iniciarVisualizador();
+  redimensionarCanvas();
+  if (biblioteca.length) tocar(0); else abrirPainel('busca');
+});
+
+btnAdd.addEventListener('click', () => {
+  if (nativo) nativo.abrirSeletor(); else mostrarAviso('Disponível apenas no aplicativo');
+});
+
+function adicionarFaixas(faixas) {
+  let novas = 0;
+  faixas.forEach((f) => {
+    if (!biblioteca.some((b) => b.id === f.id)) { biblioteca.push(f); novas++; }
+  });
+  salvarBiblioteca();
+  desenharBiblioteca();
+  desenharBusca();
+  return novas;
+}
+
+function removerFaixa(id) {
+  const pos = biblioteca.findIndex((b) => b.id === id);
+  if (pos < 0) return;
+  const f = biblioteca[pos];
+  const eraAtual = pos === indice;
+  const nomes = [];
+  [f.url, f.capa].forEach((u) => { if (u) nomes.push(u.split('/').pop()); });
+  if (nativo) nativo.removerArquivos(JSON.stringify(nomes));
+  biblioteca.splice(pos, 1);
+  salvarBiblioteca();
+  if (eraAtual) {
+    audio.pause();
+    audio.removeAttribute('src');
+    audio.load();
+    indice = -1;
+    if (biblioteca.length) tocar(Math.min(pos, biblioteca.length - 1)); else { atualizarRotulo(); atualizarBotaoPlay(); if (nativo) nativo.encerrarMidia(); }
+  } else if (pos < indice) {
+    indice--;
+  }
+  desenharBiblioteca();
+  desenharBusca();
+}
+
+function capaElemento(url) {
+  if (url) {
+    const img = el('img');
+    img.loading = 'lazy';
+    img.alt = '';
+    img.src = url;
+    img.onerror = () => { const s = el('div', 'sem-capa'); img.replaceWith(s); };
+    return img;
+  }
+  return el('div', 'sem-capa');
+}
+
+function botaoMini(icone, rotulo, aoClicar) {
+  const b = el('button', 'mini');
+  b.innerHTML = icone;
+  b.setAttribute('aria-label', rotulo);
+  b.addEventListener('click', (e) => { e.stopPropagation(); aoClicar(b); });
+  return b;
+}
+
+function desenharBiblioteca() {
+  listaBiblioteca.textContent = '';
+  if (!biblioteca.length) {
+    listaBiblioteca.append(el('div', 'vazio', 'Sua biblioteca está vazia. Use “Adicionar Músicas” ou pesquise na web.'));
+    return;
+  }
+  const atual = faixaAtual();
+  biblioteca.forEach((f, i) => {
+    const linha = el('div', 'item' + (atual && atual.id === f.id && !audio.paused ? ' tocando' : ''));
+    linha.append(capaElemento(f.capa));
+    const info = el('div', 'info');
+    info.append(el('div', 'nome', f.titulo), el('div', 'artista', f.artista));
+    if (f.duracao) info.append(el('div', 'dur', formatarTempo(f.duracao / 1000)));
+    linha.append(info);
+    const acoes = el('div', 'acoes');
+    acoes.append(botaoMini(ICONE_LIXO, 'Remover', () => removerFaixa(f.id)));
+    linha.append(acoes);
+    linha.addEventListener('click', () => tocar(i));
+    listaBiblioteca.append(linha);
+  });
+}
+
+let ultimaBusca = [];
+let estadoBusca = 'inicial';
+let mensagemBusca = '';
+const adicionando = new Set();
+const cacheBusca = new Map();
+let contadorBusca = 0;
+let buscaAtual = '0';
+let timerBusca = null;
+
+function pararPrevia() {
+  if (previaId !== null) {
+    previa.pause();
+    previaId = null;
+    desenharBusca();
+  }
+}
+
+function alternarPrevia(item) {
+  if (previaId === item.id) { pararPrevia(); return; }
+  if (!item.previa) return;
+  if (!audio.paused) audio.pause();
+  previa.src = item.previa;
+  previaId = item.id;
+  const p = previa.play();
+  if (p && p.catch) p.catch(() => { previaId = null; mostrarAviso('Não foi possível tocar a prévia'); desenharBusca(); });
+  desenharBusca();
+}
+previa.addEventListener('ended', () => { previaId = null; desenharBusca(); });
+
+function desenharBusca() {
+  listaBusca.textContent = '';
+  if (estadoBusca === 'carregando') {
+    const c = el('div', 'carregando');
+    c.append(el('div', 'giro'));
+    listaBusca.append(c);
+    return;
+  }
+  if (estadoBusca === 'inicial') { listaBusca.append(el('div', 'vazio', 'Digite o nome de uma música ou artista.')); return; }
+  if (estadoBusca === 'erro') { listaBusca.append(el('div', 'vazio', mensagemBusca)); return; }
+  if (!ultimaBusca.length) { listaBusca.append(el('div', 'vazio', 'Nenhum resultado encontrado.')); return; }
+  ultimaBusca.forEach((item) => {
+    const linha = el('div', 'item');
+    linha.append(capaElemento(item.capa));
+    const info = el('div', 'info');
+    info.append(el('div', 'nome', item.titulo), el('div', 'artista', item.artista));
+    if (item.duracao) info.append(el('div', 'dur', formatarTempo(item.duracao / 1000) + ' · prévia de 30s'));
+    linha.append(info);
+    const acoes = el('div', 'acoes');
+    const bPrevia = botaoMini(previaId === item.id ? ICONE_PAUSE : ICONE_PLAY, 'Prévia', () => alternarPrevia(item));
+    bPrevia.disabled = !item.previa;
+    acoes.append(bPrevia);
+    const naBiblioteca = biblioteca.some((b) => b.id === item.id);
+    const bAdd = botaoMini(naBiblioteca ? ICONE_OK : ICONE_MAIS, 'Adicionar à biblioteca', () => adicionarDaBusca(item, bAdd));
+    if (naBiblioteca) { bAdd.classList.add('ok'); bAdd.disabled = true; }
+    if (!item.previa) bAdd.disabled = true;
+    if (adicionando.has(item.id)) { bAdd.disabled = true; bAdd.innerHTML = ''; bAdd.append(el('div', 'giro')); bAdd.firstChild.style.width = '60%'; bAdd.firstChild.style.height = '60%'; bAdd.firstChild.style.minWidth = '0'; bAdd.firstChild.style.minHeight = '0'; }
+    acoes.append(bAdd);
+    linha.append(acoes);
+    listaBusca.append(linha);
+  });
+}
+
+function adicionarDaBusca(item) {
+  if (!nativo) { mostrarAviso('Disponível apenas no aplicativo'); return; }
+  if (adicionando.has(item.id)) return;
+  adicionando.add(item.id);
+  desenharBusca();
+  nativo.adicionarBusca(JSON.stringify(item));
+}
+
+function executarBusca(termo) {
+  if (cacheBusca.has(termo)) {
+    ultimaBusca = cacheBusca.get(termo);
+    estadoBusca = 'resultado';
+    desenharBusca();
+    return;
+  }
+  if (!nativo) { estadoBusca = 'erro'; mensagemBusca = 'Pesquisa disponível apenas no aplicativo.'; desenharBusca(); return; }
+  contadorBusca++;
+  buscaAtual = String(contadorBusca);
+  buscaTermo[buscaAtual] = termo;
+  estadoBusca = 'carregando';
+  desenharBusca();
+  nativo.buscar(buscaAtual, termo);
+}
+const buscaTermo = {};
+
+campoBusca.addEventListener('input', () => {
+  clearTimeout(timerBusca);
+  const termo = campoBusca.value.trim();
+  if (termo.length < 2) {
+    contadorBusca++;
+    buscaAtual = String(contadorBusca);
+    estadoBusca = 'inicial';
+    desenharBusca();
+    return;
+  }
+  timerBusca = setTimeout(() => executarBusca(termo.toLowerCase()), 500);
+});
+campoBusca.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    clearTimeout(timerBusca);
+    const termo = campoBusca.value.trim();
+    if (termo.length >= 2) executarBusca(termo.toLowerCase());
+    campoBusca.blur();
+  }
+});
+
+function abrirPainel(aba) {
+  painel.classList.add('aberto');
+  trocarAba(aba);
+}
+function fecharPainelFn() {
+  if (!painel.classList.contains('aberto')) return false;
+  painel.classList.remove('aberto');
+  campoBusca.blur();
+  pararPrevia();
+  return true;
+}
+window.fecharPainel = fecharPainelFn;
+
+function trocarAba(aba) {
+  const busca = aba === 'busca';
+  abaBusca.classList.toggle('ativa', busca);
+  abaBiblioteca.classList.toggle('ativa', !busca);
+  vistaBusca.style.display = busca ? 'flex' : 'none';
+  vistaBiblioteca.style.display = busca ? 'none' : 'flex';
+  if (busca) desenharBusca(); else desenharBiblioteca();
+}
+
+btnBusca.addEventListener('click', () => abrirPainel('busca'));
+btnBiblioteca.addEventListener('click', () => abrirPainel('biblioteca'));
+abaBusca.addEventListener('click', () => trocarAba('busca'));
+abaBiblioteca.addEventListener('click', () => trocarAba('biblioteca'));
+$('fechar-painel').addEventListener('click', fecharPainelFn);
+
+window.onNativo = function (tipo, dados) {
+  if (tipo === 'arquivos') {
+    const itens = dados.itens || [];
+    if (!itens.length) { mostrarAviso('Nenhum arquivo adicionado'); return; }
+    const antes = biblioteca.length;
+    const novas = adicionarFaixas(itens);
+    mostrarAviso(novas + ' música(s) adicionada(s)');
+    if (antes === 0 && biblioteca.length && indice < 0 && motorIniciado) tocar(0);
+  } else if (tipo === 'busca') {
+    if (dados.id !== buscaAtual) return;
+    if (dados.ok) {
+      ultimaBusca = dados.itens || [];
+      const termo = buscaTermo[dados.id];
+      if (termo) cacheBusca.set(termo, ultimaBusca);
+      estadoBusca = 'resultado';
+    } else {
+      estadoBusca = 'erro';
+      mensagemBusca = dados.erro || 'Falha na pesquisa.';
+    }
+    desenharBusca();
+  } else if (tipo === 'adicionado') {
+    adicionando.delete(dados.id);
+    if (dados.ok) {
+      adicionarFaixas([dados.faixa]);
+      mostrarAviso('Adicionada à biblioteca');
+    } else {
+      mostrarAviso(dados.erro || 'Falha ao adicionar');
+      desenharBusca();
+    }
+  }
+};
+
+let volumeAntes = 1;
+window.comandoNativo = function (cmd, arg) {
+  if (cmd === 'play') {
+    if (indice < 0) { if (biblioteca.length) tocar(0); return; }
+    if (audioContext && audioContext.state === 'suspended') audioContext.resume();
+    pararPrevia();
+    const p = audio.play();
+    if (p && p.catch) p.catch(() => {});
+  } else if (cmd === 'pause') {
+    audio.pause();
+  } else if (cmd === 'next') {
+    proximaMusica();
+  } else if (cmd === 'prev') {
+    musicaAnterior();
+  } else if (cmd === 'seek') {
+    if (audio.duration) audio.currentTime = arg / 1000;
+  } else if (cmd === 'duck') {
+    volumeAntes = audio.volume;
+    audio.volume = 0.3;
+  } else if (cmd === 'unduck') {
+    audio.volume = volumeAntes || 1;
+  }
+};
+
+document.addEventListener('visibilitychange', () => {
+  if (audioContext && audioContext.state === 'suspended' && !audio.paused) audioContext.resume();
+});
+
+function redimensionarCanvas() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+  ctxCanvas.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', redimensionarCanvas);
+window.addEventListener('orientationchange', () => setTimeout(redimensionarCanvas, 300));
+
+let dadosFrequencia;
+let desenhando = false;
+function iniciarVisualizador() {
+  dadosFrequencia = new Uint8Array(analyser.frequencyBinCount);
+  if (!desenhando) { desenhando = true; desenhar(); }
+}
+
+function calcularGraveMedio() {
+  if (!dadosFrequencia) return 0;
+  const limite = Math.floor(dadosFrequencia.length * 0.2);
+  let soma = 0;
+  for (let i = 0; i < limite; i++) soma += dadosFrequencia[i];
+  return (soma / limite) / 255;
+}
+
+function desenhar() {
+  requestAnimationFrame(desenhar);
+  if (!analyser) return;
+  analyser.getByteFrequencyData(dadosFrequencia);
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const cx = w / 2;
+  const cy = h / 2;
+  ctxCanvas.clearRect(0, 0, w, h);
+  const totalBarras = 64;
+  const raioInterno = Math.min(w, h) * 0.22;
+  const raioMaximo = raioInterno * 1.9;
+  const passo = (Math.PI * 2) / totalBarras;
+  for (let i = 0; i < totalBarras; i++) {
+    const inicio = Math.floor((i / totalBarras) * dadosFrequencia.length);
+    const fim = Math.max(inicio + 1, Math.floor(((i + 1) / totalBarras) * dadosFrequencia.length));
+    let soma = 0;
+    for (let j = inicio; j < fim; j++) soma += dadosFrequencia[j];
+    const media = soma / (fim - inicio) / 255;
+    const altura = media * (raioMaximo - raioInterno);
+    const angulo = i * passo - Math.PI / 2;
+    const x1 = cx + Math.cos(angulo) * raioInterno;
+    const y1 = cy + Math.sin(angulo) * raioInterno;
+    const x2 = cx + Math.cos(angulo) * (raioInterno + altura + 4);
+    const y2 = cy + Math.sin(angulo) * (raioInterno + altura + 4);
+    const cor = media > 0.7 ? '#ff2200' : media > 0.4 ? '#ff6600' : '#ffaa00';
+    ctxCanvas.beginPath();
+    ctxCanvas.moveTo(x1, y1);
+    ctxCanvas.lineTo(x2, y2);
+    ctxCanvas.strokeStyle = cor;
+    ctxCanvas.lineWidth = Math.max(2, w * 0.006);
+    ctxCanvas.lineCap = 'round';
+    ctxCanvas.shadowBlur = 12;
+    ctxCanvas.shadowColor = cor;
+    ctxCanvas.stroke();
+  }
+  ctxCanvas.shadowBlur = 0;
+  const escala = 1 + calcularGraveMedio() * 0.15;
+  logo.style.transform = 'scale(' + escala + ') rotate(' + ((performance.now() / 80) % 360) + 'deg)';
+}
+
+document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+desenharBiblioteca();
+desenharBusca();
+</script>
+</body>
+</html>
